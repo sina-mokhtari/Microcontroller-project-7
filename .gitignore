@@ -1,7 +1,3 @@
-
-# Created by https://www.toptal.com/developers/gitignore/api/c,eclipse
-# Edit at https://www.toptal.com/developers/gitignore?templates=c,eclipse
-
 ### C ###
 # Prerequisites
 *.d
@@ -127,4 +123,4 @@ local.properties
 
 Mokhtari.mp4
 Mousavi.mp4
-SinaMokhtari_9822762233_S4.rar
+S7.pdf

@@ -23,12 +23,21 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "LiquidCrystal.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+enum statusType {
+	FIRST_NUM, SECOND_NUM
+};
+enum operatorType {
+	PLUS, MINUS, MULTIPLY, DIVISION
+};
+enum signType {
+	POSITIVE, NEGATIVE
+};
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -55,6 +64,11 @@ PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
 int lastExtiTime = 0;
+enum statusType status = FIRST_NUM;
+enum signType firstNumSign = POSITIVE;
+enum operatorType operator;
+int firstNumIdx = 0, secondNumIdx = 0;
+int firstNumBuff[5] = { [0 ... 4] = -1 }, secondNumBuff[5] = { [0 ... 4] = -1 };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -325,6 +339,7 @@ static void MX_GPIO_Init(void) {
 volatile int myNum;
 volatile bool clicked = false;
 char calcChar;
+char str[10];
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM6) {
 		if (!clicked)
@@ -332,68 +347,117 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 		switch (myNum) {
 		case 1:
-			calcChar = '1';
-			print("1");
-			break;
 		case 2:
-			calcChar = '2';
-			print("2");
-			break;
 		case 3:
-			calcChar = '3';
-			print("3");
-			break;
-		case 4:
-			calcChar = '-';
-			print("-");
+			switch (status) {
+			case FIRST_NUM:
+				if (firstNumIdx < 4) {
+					firstNumBuff[firstNumIdx] = myNum;
+					firstNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			case SECOND_NUM:
+				if (secondNumIdx < 4) {
+					secondNumBuff[secondNumIdx] = myNum;
+					secondNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			}
 			break;
 		case 5:
-			calcChar = '4';
-			print("4");
-			break;
 		case 6:
-			calcChar = '5';
-			print("5");
-			break;
 		case 7:
-			calcChar = '6';
-			print("6");
-			break;
-		case 8:
-			calcChar = '+';
-			print("+");
+			switch (status) {
+			case FIRST_NUM:
+				if (firstNumIdx < 4) {
+					firstNumBuff[firstNumIdx] = myNum - 1;
+					firstNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			case SECOND_NUM:
+				if (secondNumIdx < 4) {
+					secondNumBuff[secondNumIdx] = myNum - 1;
+					secondNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			}
 			break;
 		case 9:
-			calcChar = '7';
-			print("7");
-			break;
 		case 10:
-			calcChar = '8';
-			print("8");
-			break;
 		case 11:
-			calcChar = '9';
-			print("9");
-			break;
-		case 12:
-			calcChar = '*';
-			print("*");
-			break;
-		case 13:
-			calcChar = 'C';
-			print("C");
+			switch (status) {
+			case FIRST_NUM:
+				if (firstNumIdx < 4) {
+					firstNumBuff[firstNumIdx] = myNum - 2;
+					firstNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			case SECOND_NUM:
+				if (secondNumIdx < 4) {
+					secondNumBuff[secondNumIdx] = myNum - 2;
+					secondNumIdx++;
+					sprintf(str, "%d", myNum);
+					print(str);
+				}
+				break;
+			}
 			break;
 		case 14:
-			calcChar = '0';
-			print("0");
+			switch (status) {
+			case FIRST_NUM:
+				if (firstNumIdx < 4 && firstNumIdx > 0) {
+					firstNumBuff[firstNumIdx] = 0;
+					firstNumIdx++;
+					sprintf(str, "%d", 0);
+					print(str);
+				}
+				break;
+			case SECOND_NUM:
+				if (secondNumIdx < 4 && secondNumIdx > 0) {
+					secondNumBuff[secondNumIdx] = 0;
+					secondNumIdx++;
+					sprintf(str, "%d", 0);
+					print(str);
+				}
+				break;
+			}
+			break;
+
+		case 4:
+			if (status == FIRST_NUM) {
+				if (firstNumIdx == 0) {
+					firstNumSign = NEGATIVE;
+					setCursor(0, 0);
+				} else {
+					status = SECOND_NUM;
+					operator = MINUS;
+				}
+				print("-");
+			}
+			break;
+
+		case 8:
+
+			break;
+
+		case 12:
+
+			break;
+		case 13:
 			break;
 		case 15:
-			calcChar = '=';
-			print("=");
 			break;
 		case 16:
-			calcChar = '/';
-			print("/");
 			break;
 
 		default:
@@ -402,23 +466,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			break;
 		}
 
-		//char str[5];
-		//setCursor(0, 0);
-		//sprintf(str, "%2d", myNum);
-		//	print(&calcChar);
 		clicked = false;
 
 	}
 }
 
-// Input pull down rising edge trigger interrupt pins:
-// Row1 PD3, Row2 PD5, Row3 PD7, Row4 PB4
 GPIO_TypeDef *const Row_ports[] = { GPIOD, GPIOD, GPIOD, GPIOD };
 const uint16_t Row_pins[] = { GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3 };
-// Output pins: Column1 PD4, Column2 PD6, Column3 PB3, Column4 PB5
 GPIO_TypeDef *const Column_ports[] = { GPIOD, GPIOD, GPIOD, GPIOD };
 const uint16_t Column_pins[] = { GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7 };
-volatile uint32_t last_gpio_exti;
+uint32_t last_gpio_exti;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (last_gpio_exti + 300 > HAL_GetTick()) {
@@ -467,7 +524,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	const uint8_t button_number = row_number * 4 + column_number + 1;
 	myNum = button_number;
 	clicked = true;
-
 }
 
 void calcPrint(const char *c) {
