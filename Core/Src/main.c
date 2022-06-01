@@ -79,6 +79,7 @@ static void MX_USB_PCD_Init(void);
 static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 void calcPrint(const char *c);
+void calculate();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -556,6 +557,77 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void calcPrint(const char *c) {
 	print(c);
+}
+
+void calculate() {
+	int firstNum = 0;
+	switch(firstNumIdx) {
+		case 4:
+			firstNum += 1000 * firstNumBuff[0];
+			firstNum += 100 * firstNumBuff[1];
+			firstNum += 10 * firstNumBuff[2];
+			firstNum += firstNumBuff[3];
+			break;
+		case 3:
+			firstNum += 100 * firstNumBuff[0];
+			firstNum += 10 * firstNumBuff[1];
+			firstNum += firstNumBuff[2];
+			break;
+		case 2:
+			firstNum += 10 * firstNumBuff[0];
+			firstNum += firstNumBuff[1];
+			break;
+		case 1:
+			firstNum += firstNumBuff[0];
+			break;
+	}
+
+
+	int secondNum = 0;
+	switch(secondNumIdx) {
+		case 4:
+			secondNum += 1000 * secondNumBuff[0];
+			secondNum += 100 * secondNumBuff[1];
+			secondNum += 10 * secondNumBuff[2];
+			secondNum += secondNumBuff[3];
+			break;
+		case 3:
+			secondNum += 100 * secondNumBuff[0];
+			secondNum += 10 * secondNumBuff[1];
+			secondNum += secondNumBuff[2];
+			break;
+		case 2:
+			secondNum += 10 * secondNumBuff[0];
+			secondNum += secondNumBuff[1];
+			break;
+		case 1:
+			secondNum += secondNumBuff[0];
+			break;
+		}
+
+	if (firstNumSign == NEGATIVE) {
+		firstNum = -1 * firstNum;
+	}
+
+	float result = 0;
+	switch(operator) {
+		case PLUS:
+			result = firstNum + secondNum;
+			break;
+		case MINUS:
+			result = firstNum - secondNum;
+			break;
+		case MULTIPLY:
+			result = firstNum * secondNum;
+			break;
+		case DIVISION:
+			if (secondNum == 0) break;
+			result = (float) firstNum / secondNum;
+			break;
+	}
+
+	sprintf(str, "%d", result);
+	print(str);
 }
 /* USER CODE END 4 */
 
