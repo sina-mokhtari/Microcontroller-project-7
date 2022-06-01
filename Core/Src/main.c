@@ -87,6 +87,7 @@ static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 void calcPrint(const char *c);
 void calculate();
+void setAsFirstNum(int n)
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -658,13 +659,16 @@ void calculate() {
 
 	switch (operator) {
 	case PLUS:
-		result = firstNum + secondNum;
+		fResult = firstNum + secondNum;
+		sprintf(str, "%d", (int) fResult);
 		break;
 	case MINUS:
-		result = firstNum - secondNum;
+		fResult = firstNum - secondNum;
+		sprintf(str, "%d", (int) fResult);
 		break;
 	case MULTIPLY:
-		result = firstNum * secondNum;
+		fResult = firstNum * secondNum;
+		sprintf(str, "%d", (int) fResult);
 		break;
 	case DIVISION:
 		if (secondNum == 0) {
@@ -672,21 +676,31 @@ void calculate() {
 			clear();
 			print("DIVIDE BY ZERO!!");
 			return;
-			break;
 		}
 		fResult = (float) firstNum / secondNum;
 		sprintf(str, "%.2f", fResult);
-		print("=");
-		if (++currentRow == 4) {
-			currentRow = 0;
-			clear();
-		} else
-			setCursor(0, currentRow);
-		print(str);
-		return;
 		break;
 	}
-	int tmp = result;
+
+	print("=");
+	if (++currentRow == 4) {
+		currentRow = 0;
+		clear();
+	} else
+		setCursor(0, currentRow);
+	print(str);
+
+	setAsFirstNum(fResult);
+
+	for (int i = 0; i < 4; i++)
+		secondNumBuff[i] = 0;
+	secondNumIdx = 0;
+
+
+}
+
+void setAsFirstNum(int n) {
+	int tmp = n;
 	firstNumBuff[3] = tmp % 10;
 	tmp /= 10;
 	firstNumBuff[2] = tmp % 10;
@@ -695,17 +709,6 @@ void calculate() {
 	tmp /= 10;
 	firstNumBuff[0] = tmp % 10;
 	firstNumIdx = 4;
-	for (int i = 0; i < 4; i++)
-		secondNumBuff[i] = 0;
-	secondNumIdx = 0;
-	sprintf(str, "%d", result);
-	print("=");
-	if (++currentRow == 4) {
-		currentRow = 0;
-		clear();
-	} else
-		setCursor(0, currentRow);
-	print(str);
 }
 /* USER CODE END 4 */
 
