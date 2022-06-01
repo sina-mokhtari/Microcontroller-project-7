@@ -30,7 +30,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 enum statusType {
-	FIRST_NUM, SECOND_NUM
+	FIRST_NUM, SECOND_NUM, RESULT, ERROR0
 };
 enum operatorType {
 	PLUS, MINUS, MULTIPLY, DIVISION
@@ -121,6 +121,8 @@ int main(void) {
 	LiquidCrystal(GPIOA, LCD_D8, LCD_D9, LCD_D10, LCD_D11, LCD_D12, LCD_D13,
 	LCD_D14);
 	begin(20, 4);
+
+	print("0");
 
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_SET);
 	/* USER CODE END 2 */
@@ -341,11 +343,21 @@ static void MX_GPIO_Init(void) {
 volatile int myNum;
 volatile bool clicked = false;
 char calcChar;
-char str[10];
+char str[20];
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM6) {
 		if (!clicked)
 			return;
+		if (status == ERROR0) {
+			for (int i = 0; i < 4; i++)
+				firstNumBuff[i] = secondNumBuff[i] = 0;
+			firstNumIdx = secondNumIdx = 0;
+			status = FIRST_NUM;
+			firstNumSign = POSITIVE;
+			clear();
+			setCursor(0, 0);
+			print("0");
+		}
 
 		switch (myNum) {
 		case 1:
@@ -377,7 +389,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if (firstNumIdx < 4) {
 					firstNumBuff[firstNumIdx] = myNum - 1;
 					firstNumIdx++;
-					sprintf(str, "%d", myNum);
+					sprintf(str, "%d", myNum - 1);
 					if (firstNumIdx == 1)
 						setCursor(0, currentRow);
 					print(str);
@@ -386,7 +398,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if (secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = myNum - 1;
 					secondNumIdx++;
-					sprintf(str, "%d", myNum);
+					sprintf(str, "%d", myNum - 1);
 					print(str);
 				}
 			}
@@ -399,7 +411,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if (firstNumIdx < 4) {
 					firstNumBuff[firstNumIdx] = myNum - 2;
 					firstNumIdx++;
-					sprintf(str, "%d", myNum);
+					sprintf(str, "%d", myNum - 2);
 					if (firstNumIdx == 1)
 						setCursor(0, currentRow);
 					print(str);
@@ -408,7 +420,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 				if (secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = myNum - 2;
 					secondNumIdx++;
-					sprintf(str, "%d", myNum);
+					sprintf(str, "%d", myNum - 2);
 					print(str);
 				}
 			}
@@ -442,6 +454,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 					operator = MINUS;
 				}
 				print("-");
+			} else if (status == RESULT) {
+				status = SECOND_NUM;
+				operator = MINUS;
+				print("-");
 			}
 			break;
 
@@ -454,11 +470,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 					operator = PLUS;
 					print("+");
 				}
+			} else if (status == RESULT) {
+				status = SECOND_NUM;
+				operator = PLUS;
+				print("+");
 			}
 			break;
 
 		case 12:
 			if (status == FIRST_NUM) {
+				status = SECOND_NUM;
+				operator = MULTIPLY;
+				print("*");
+			} else if (status == RESULT) {
 				status = SECOND_NUM;
 				operator = MULTIPLY;
 				print("*");
@@ -477,12 +501,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		case 15:
 			if (status == SECOND_NUM) {
 				if (secondNumIdx > 0) {
-					//calculate();
+					calculate();
 				}
 			}
 			break;
 		case 16:
 			if (status == FIRST_NUM) {
+				status = SECOND_NUM;
+				operator = DIVISION;
+				print("/");
+			} else if (status == RESULT) {
 				status = SECOND_NUM;
 				operator = DIVISION;
 				print("/");
@@ -559,74 +587,93 @@ void calcPrint(const char *c) {
 	print(c);
 }
 
+int result = 0;
 void calculate() {
+	status = RESULT;
 	int firstNum = 0;
-	switch(firstNumIdx) {
-		case 4:
-			firstNum += 1000 * firstNumBuff[0];
-			firstNum += 100 * firstNumBuff[1];
-			firstNum += 10 * firstNumBuff[2];
-			firstNum += firstNumBuff[3];
-			break;
-		case 3:
-			firstNum += 100 * firstNumBuff[0];
-			firstNum += 10 * firstNumBuff[1];
-			firstNum += firstNumBuff[2];
-			break;
-		case 2:
-			firstNum += 10 * firstNumBuff[0];
-			firstNum += firstNumBuff[1];
-			break;
-		case 1:
-			firstNum += firstNumBuff[0];
-			break;
+	switch (firstNumIdx) {
+	case 4:
+		firstNum += 1000 * firstNumBuff[0];
+		firstNum += 100 * firstNumBuff[1];
+		firstNum += 10 * firstNumBuff[2];
+		firstNum += firstNumBuff[3];
+		break;
+	case 3:
+		firstNum += 100 * firstNumBuff[0];
+		firstNum += 10 * firstNumBuff[1];
+		firstNum += firstNumBuff[2];
+		break;
+	case 2:
+		firstNum += 10 * firstNumBuff[0];
+		firstNum += firstNumBuff[1];
+		break;
+	case 1:
+		firstNum += firstNumBuff[0];
+		break;
 	}
-
 
 	int secondNum = 0;
-	switch(secondNumIdx) {
-		case 4:
-			secondNum += 1000 * secondNumBuff[0];
-			secondNum += 100 * secondNumBuff[1];
-			secondNum += 10 * secondNumBuff[2];
-			secondNum += secondNumBuff[3];
-			break;
-		case 3:
-			secondNum += 100 * secondNumBuff[0];
-			secondNum += 10 * secondNumBuff[1];
-			secondNum += secondNumBuff[2];
-			break;
-		case 2:
-			secondNum += 10 * secondNumBuff[0];
-			secondNum += secondNumBuff[1];
-			break;
-		case 1:
-			secondNum += secondNumBuff[0];
-			break;
-		}
+	switch (secondNumIdx) {
+	case 4:
+		secondNum += 1000 * secondNumBuff[0];
+		secondNum += 100 * secondNumBuff[1];
+		secondNum += 10 * secondNumBuff[2];
+		secondNum += secondNumBuff[3];
+		break;
+	case 3:
+		secondNum += 100 * secondNumBuff[0];
+		secondNum += 10 * secondNumBuff[1];
+		secondNum += secondNumBuff[2];
+		break;
+	case 2:
+		secondNum += 10 * secondNumBuff[0];
+		secondNum += secondNumBuff[1];
+		break;
+	case 1:
+		secondNum += secondNumBuff[0];
+		break;
+	}
 
 	if (firstNumSign == NEGATIVE) {
-		firstNum = -1 * firstNum;
+		firstNum = -firstNum;
 	}
 
-	float result = 0;
-	switch(operator) {
-		case PLUS:
-			result = firstNum + secondNum;
-			break;
-		case MINUS:
-			result = firstNum - secondNum;
-			break;
-		case MULTIPLY:
-			result = firstNum * secondNum;
-			break;
-		case DIVISION:
-			if (secondNum == 0) break;
-			result = (float) firstNum / secondNum;
-			break;
-	}
+	float fResult = 0;
 
-	sprintf(str, "%d", result);
+	switch (operator) {
+	case PLUS:
+		result = firstNum + secondNum;
+		break;
+	case MINUS:
+		result = firstNum - secondNum;
+		break;
+	case MULTIPLY:
+		result = firstNum * secondNum;
+		break;
+	case DIVISION:
+		if (secondNum == 0) {
+			status = ERROR0;
+			clear();
+			print("DIVIDE BY ZERO!!");
+			return;
+			break;
+		}
+		fResult = (float) firstNum / secondNum;
+		sprintf(str, "%f.2", fResult);
+		print(str);
+		return;
+		break;
+	}
+	int tmp = result;
+	firstNumBuff[3] = tmp % 10;
+	tmp /= 10;
+	firstNumBuff[2] = tmp % 10;
+	tmp /= 10;
+	firstNumBuff[1] = tmp % 10;
+	tmp /= 10;
+	firstNumBuff[0] = tmp % 10;
+	firstNumIdx = 4;
+	sprintf(str, " =/n%d", result);
 	print(str);
 }
 /* USER CODE END 4 */
