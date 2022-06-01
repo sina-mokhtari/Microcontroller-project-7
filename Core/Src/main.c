@@ -69,6 +69,7 @@ enum signType firstNumSign = POSITIVE;
 enum operatorType operator;
 int firstNumIdx = 0, secondNumIdx = 0;
 int firstNumBuff[5] = { [0 ... 4] = -1 }, secondNumBuff[5] = { [0 ... 4] = -1 };
+int currentRow = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -349,87 +350,84 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		case 1:
 		case 2:
 		case 3:
-			switch (status) {
-			case FIRST_NUM:
+			if (status == FIRST_NUM) {
 				if (firstNumIdx < 4) {
 					firstNumBuff[firstNumIdx] = myNum;
 					firstNumIdx++;
 					sprintf(str, "%d", myNum);
+					if (firstNumIdx == 1)
+						setCursor(0, currentRow);
 					print(str);
 				}
-				break;
-			case SECOND_NUM:
+			} else if (status == SECOND_NUM) {
 				if (secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = myNum;
 					secondNumIdx++;
 					sprintf(str, "%d", myNum);
 					print(str);
 				}
-				break;
 			}
+
 			break;
 		case 5:
 		case 6:
 		case 7:
-			switch (status) {
-			case FIRST_NUM:
+			if (status == FIRST_NUM) {
 				if (firstNumIdx < 4) {
 					firstNumBuff[firstNumIdx] = myNum - 1;
 					firstNumIdx++;
 					sprintf(str, "%d", myNum);
+					if (firstNumIdx == 1)
+						setCursor(0, currentRow);
 					print(str);
 				}
-				break;
-			case SECOND_NUM:
+			} else if (status == SECOND_NUM) {
 				if (secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = myNum - 1;
 					secondNumIdx++;
 					sprintf(str, "%d", myNum);
 					print(str);
 				}
-				break;
 			}
+
 			break;
 		case 9:
 		case 10:
 		case 11:
-			switch (status) {
-			case FIRST_NUM:
+			if (status == FIRST_NUM) {
 				if (firstNumIdx < 4) {
 					firstNumBuff[firstNumIdx] = myNum - 2;
 					firstNumIdx++;
 					sprintf(str, "%d", myNum);
+					if (firstNumIdx == 1)
+						setCursor(0, currentRow);
 					print(str);
 				}
-				break;
-			case SECOND_NUM:
+			} else if (status == SECOND_NUM) {
 				if (secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = myNum - 2;
 					secondNumIdx++;
 					sprintf(str, "%d", myNum);
 					print(str);
 				}
-				break;
 			}
+
 			break;
 		case 14:
-			switch (status) {
-			case FIRST_NUM:
+			if (status == FIRST_NUM) {
 				if (firstNumIdx < 4 && firstNumIdx > 0) {
 					firstNumBuff[firstNumIdx] = 0;
 					firstNumIdx++;
 					sprintf(str, "%d", 0);
 					print(str);
 				}
-				break;
-			case SECOND_NUM:
-				if (secondNumIdx < 4 && secondNumIdx > 0) {
+			} else if (status == SECOND_NUM) {
+				if ((secondNumBuff[0] != 0 || secondNumIdx == 0) && secondNumIdx < 4) {
 					secondNumBuff[secondNumIdx] = 0;
 					secondNumIdx++;
 					sprintf(str, "%d", 0);
 					print(str);
 				}
-				break;
 			}
 			break;
 
@@ -447,17 +445,47 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			break;
 
 		case 8:
-
+			if (status == FIRST_NUM) {
+				if (firstNumIdx == 0) {
+					firstNumSign = POSITIVE;
+				} else {
+					status = SECOND_NUM;
+					operator = PLUS;
+					print("+");
+				}
+			}
 			break;
 
 		case 12:
-
+			if (status == FIRST_NUM) {
+				status = SECOND_NUM;
+				operator = MULTIPLY;
+				print("*");
+			}
 			break;
 		case 13:
+			for (int i = 0; i < 4; i++)
+				firstNumBuff[i] = secondNumBuff[i] = 0;
+			firstNumIdx = secondNumIdx = 0;
+			status = FIRST_NUM;
+			firstNumSign = POSITIVE;
+			clear();
+			setCursor(0, 0);
+			print("0");
 			break;
 		case 15:
+			if (status == SECOND_NUM) {
+				if (secondNumIdx > 0) {
+					//calculate();
+				}
+			}
 			break;
 		case 16:
+			if (status == FIRST_NUM) {
+				status = SECOND_NUM;
+				operator = DIVISION;
+				print("/");
+			}
 			break;
 
 		default:
@@ -511,16 +539,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (row_number == -1 || column_number == -1) {
 		return; // Reject invalid scan
 	}
-	//   C0   C1   C2   C3
-	// +----+----+----+----+
-	// | 1  | 2  | 3  | 4  |  R0
-	// +----+----+----+----+
-	// | 5  | 6  | 7  | 8  |  R1
-	// +----+----+----+----+
-	// | 9  | 10 | 11 | 12 |  R2
-	// +----+----+----+----+
-	// | 13 | 14 | 15 | 16 |  R3
-	// +----+----+----+----+
+//   C0   C1   C2   C3
+// +----+----+----+----+
+// | 1  | 2  | 3  | 4  |  R0
+// +----+----+----+----+
+// | 5  | 6  | 7  | 8  |  R1
+// +----+----+----+----+
+// | 9  | 10 | 11 | 12 |  R2
+// +----+----+----+----+
+// | 13 | 14 | 15 | 16 |  R3
+// +----+----+----+----+
 	const uint8_t button_number = row_number * 4 + column_number + 1;
 	myNum = button_number;
 	clicked = true;
